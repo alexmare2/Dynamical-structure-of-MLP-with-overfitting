@@ -5,8 +5,6 @@ using LaTeXStrings  # Use Latex to print plot titles
 using BenchmarkTools  # Time functions
 using LinearAlgebra  # Eigenvalues of the jacobian
 
-# import Pkg; Pkg.add("Flux")
-
 JULIA_NUM_OF_THREADS = 60  # Number of threads to use
 
 # Define generic variables
@@ -16,8 +14,8 @@ RESUME = false
 ORBITS = false
 SHOW = true
 SAVE = true
-ACTION = "check_number_eig"  # "main", "save", "research_orbit", "test", "eigval_plot", "check_number_eig"
-RAND_SEED = 1724  #set to 1724 for very nice phenomenon
+ACTION = "main"  # "main", "save", "research_orbit", "test", "eigval_plot", "check_number_eig"
+RAND_SEED = 1724  #set to 1724 for reproducibility
 overfitted = [[0.5479504133334038; 2.154742368932136;;], [1.6105171890567702 0.6711825665103458]]
 initial = [[-0.13; 0.13;;], [0.16 -0.15]]
 
@@ -26,7 +24,7 @@ sample_size = 100
 teacher_size = 1
 student_size = 2
 non_linearity = tanh
-MAX_IT = 3000000
+MAX_IT = 200 #3000000
 N_OF_NETWORKS = 1
 data_noise_var = 0.0
 learning_step = 0.01
@@ -250,12 +248,11 @@ function plot_traj()
              c = :viridis, markersize = 0.1, markerstrokewidth = 0, label = "",
              subplot = 3, colorbar = true, clims = (minimum(log_times), maximum(log_times)),
              xticks = false, yticks = false, framestyle = :none)
-    display(plt)
     # save or display the single combined figure
     if !SAVE && SHOW
         display(plt)
     elseif SAVE
-        savefig(plt, IMG_FOLDER * "trajectory_both_$img_number.svg")
+        savefig(plt, IMG_FOLDER * "trajectory_both_$img_number.png")
     end
 
     return plt
@@ -623,16 +620,17 @@ end
 
 
 if ACTION == "main"
+    @time main()  #Benchmark the main function
+    plot_result()
+    plot_traj()
+    #save_trjs()  #Uncomment to save trajectories to a file
+elseif ACTION == "read"
     println("Reading files.")
     trajectories = read_trjs()
     MAX_IT = length(trajectories)
     epoch = MAX_IT
-    @time main()  #Benchmark the main function
-    println(MAX_IT)
-    #println("Eigenvalues:"*string(eigval(student_theta)))  #[[1.0 4 0 0]', [2.0 -1 0 0]]
-    # plot_result()
+    main()  #Benchmark the main function
     plot_traj()
-    #save_trjs()
 elseif ACTION == "save"
     # Save the sample and train_set to a data file
     open(DATA_FILE, "w") do io
